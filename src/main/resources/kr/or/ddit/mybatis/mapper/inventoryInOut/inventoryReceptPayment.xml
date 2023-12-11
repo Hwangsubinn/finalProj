@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper	namespace="kr.or.ddit.storage.dao.InventoryReceiptPaymentDAO">
+	
+	<sql id="whereFrag">
+		<trim prefix="WHERE" prefixOverrides="AND">
+	        <if test="wareCd != null and wareCd != ''">
+	            AND a.ware_cd = #{wareCd}
+	        </if>
+	        <if test='!"Y".equals(itemYn)'>
+	            AND b.item_yn = 'Y'
+	        </if>
+	        <if test="itemList.size() > 0">
+	            AND (
+	                <foreach collection="itemList" item="item" separator=" OR ">
+	                    <if test="item != null">
+	                        a.item_cd = #{item.itemCd}
+	                    </if>
+	                </foreach>
+	            )
+	        </if>
+	        <if test="rmstSdate != null and rmstSdate != '' and rmstLdate != null and rmstLdate != ''">
+	             AND a.rmst_date BETWEEN TO_DATE(#{rmstSdate},'YYYY/MM/DD') AND TO_DATE(#{rmstLdate},'YYYY/MM/DD')
+	        </if>
+		</trim>
+	</sql>
+	
+	<select id="retrieveInventory" parameterType="java.util.Map" resultType="java.util.HashMap">
+		
+		SELECT
+		    distinct
+		    a.stor_cd "storCd",
+		    a.item_cd "itemCd",
+		    a.rmst_qty "rmstQty",
+		    a.rmst_date "rmstDate",
+		    a.rmst_note "rmstNote",
+		    a.stor_cate "storCate",
+		    a.stor_rsn "storRsn",
+		    a.ware_cd "wareCd",
+		    a.sec_cd2 "secCd2",
+		    a.rdrec_cd "rdrecCd",
+		    a.pord_cd "purCd",
+		    b.item_nm "itemNm",
+		    b.item_inpr "itemInpr",
+		    b.item_outPr "itemOutPr",
+		    b.item_yn "itemYn",
+		    z.com_cd "purComCd",
+		    d.com_cd "saleComCd",
+		    e.com_nm "purComNm",
+		    f.com_nm "saleComNm",
+		    g.def_proc_cd "defectCd",
+            h.ware_nm "wareNm"
+		FROM
+		    stor_inout a inner join item b on(a.item_cd = b.item_cd)
+		    left outer join pur_ord c on(a.PORD_cd = c.PORD_cd) 
+		    left outer join rels_direc d on(a.rdrec_cd = d.rdrec_cd)
+		    left outer join pur_ord_item z on(z.pord_cd = c.pord_cd)
+		    left outer join com e on(z.com_cd = e.com_cd)
+		    left outer join com f on(d.com_cd = f.com_cd)
+		    left outer join inv_def_proc g on(g.def_proc_cd = a.def_proc_cd)
+            inner join ware h on(a.ware_cd = h.ware_cd)
+		
+		<include refid="whereFrag"/>
+		order by b.item_nm ASC,  a.rmst_date ASC
+	</select>
+	
+	<select id="sDateData" parameterType="java.util.Map" resultType="java.lang.Integer">
+		<![CDATA[
+			select sum(a.rmst_qty) rmst_qty 
+			from stor_inout a inner join item b on(a.item_cd = b.item_cd) 
+			where 1=1 
+			and a.rmst_date < #{rmstSdate}
+			and a.stor_cate ='B001' 
+			and b.item_cd = #{itemCd} 
+			GROUP BY b.item_cd 
+		]]>
+	</select>
+	
+	<select id="LDateData" parameterType="java.util.Map" resultType="java.lang.Integer">
+		<![CDATA[
+			select sum(a.rmst_qty) rmst_qty 
+			from stor_inout a inner join item b on(a.item_cd = b.item_cd) 
+			where 1=1 
+			and a.rmst_date < #{rmstSdate} 
+			and a.stor_cate ='B002' 
+			and b.item_cd = #{itemCd} 
+			GROUP BY b.item_cd 
+		]]>
+	</select>
+	
+	<select id="dDateData" parameterType="java.util.Map" resultType="java.lang.Integer">
+		 <![CDATA[
+			select sum(a.rmst_qty) rmst_qty 
+			from stor_inout a inner join item b on(a.item_cd = b.item_cd) 
+			where 1=1 
+			and a.rmst_date < #{rmstSdate} 
+			and a.stor_cate ='B003' 
+			and b.item_cd = #{itemCd} 
+			GROUP BY b.item_cd 
+		]]>
+	</select>
+	
+</mapper>
